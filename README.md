@@ -1,4 +1,4 @@
-# Zulip Flutter (beta)
+# Zulip Flutter (beta) 2
 
 A Zulip client for Android and iOS, using Flutter.
 
