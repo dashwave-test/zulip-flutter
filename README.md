@@ -13,7 +13,7 @@ see the [milestones][] and the [project board][].
 [project board]: https://github.com/orgs/zulip/projects/5/views/4
 
 
-## Using Zulip
+## Using Zulip 2
 
 To use Zulip on iOS or Android, install the [official mobile Zulip client][].
 
