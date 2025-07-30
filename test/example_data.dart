@@ -36,6 +36,7 @@ GetServerSettingsResult serverSettings({
   String? realmIcon,
   String? realmDescription,
   bool? realmWebPublicAccessEnabled,
+  bool? enableTwitterLogin,
 }) {
   return GetServerSettingsResult(
     authenticationMethods: authenticationMethods ?? {},
@@ -52,6 +53,7 @@ GetServerSettingsResult serverSettings({
     realmIcon: realmIcon ?? '$realmUrl/icon.png',
     realmDescription: realmDescription ?? 'An example Zulip organization',
     realmWebPublicAccessEnabled: realmWebPublicAccessEnabled ?? false,
+    enableTwitterLogin: enableTwitterLogin ?? false,
   );
 }
 

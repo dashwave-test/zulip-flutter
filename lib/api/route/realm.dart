@@ -50,6 +50,8 @@ class GetServerSettingsResult {
   final String realmDescription;
   final bool? realmWebPublicAccessEnabled; // TODO(server-5)
 
+  final bool enableTwitterLogin;
+
   GetServerSettingsResult({
     required this.authenticationMethods,
     required this.externalAuthenticationMethods,
@@ -65,6 +67,7 @@ class GetServerSettingsResult {
     required this.realmIcon,
     required this.realmDescription,
     required this.realmWebPublicAccessEnabled,
+    this.enableTwitterLogin = false,
   });
 
   factory GetServerSettingsResult.fromJson(Map<String, dynamic> json) =>
