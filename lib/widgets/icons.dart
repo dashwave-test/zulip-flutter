@@ -69,11 +69,14 @@ abstract final class ZulipIcons {
   /// The Zulip custom icon "topic".
   static const IconData topic = IconData(0xf10f, fontFamily: "Zulip Icons");
 
+  /// The Zulip custom icon "twitter".
+  static const IconData twitter = IconData(0xf110, fontFamily: "Zulip Icons");
+
   /// The Zulip custom icon "unmute".
-  static const IconData unmute = IconData(0xf110, fontFamily: "Zulip Icons");
+  static const IconData unmute = IconData(0xf111, fontFamily: "Zulip Icons");
 
   /// The Zulip custom icon "user".
-  static const IconData user = IconData(0xf111, fontFamily: "Zulip Icons");
+  static const IconData user = IconData(0xf112, fontFamily: "Zulip Icons");
 
   // END GENERATED ICON DATA
 }

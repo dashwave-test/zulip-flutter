@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/zulip_localizations.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../api/exception.dart';
@@ -14,6 +15,7 @@ import '../model/binding.dart';
 import '../model/store.dart';
 import 'app.dart';
 import 'dialog.dart';
+import 'icons.dart';
 import 'input.dart';
 import 'page.dart';
 import 'store.dart';
@@ -416,7 +418,19 @@ class _LoginPageState extends State<LoginPage> {
     assert(!PerAccountStoreWidget.debugExistsOf(context));
     final zulipLocalizations = ZulipLocalizations.of(context);
 
-    final externalAuthenticationMethods = widget.serverSettings.externalAuthenticationMethods;
+    final serverSettings = widget.serverSettings;
+    final List<ExternalAuthenticationMethod> externalAuthenticationMethods = [
+      ...serverSettings.externalAuthenticationMethods
+    ];
+    if (serverSettings.enableTwitterLogin) {
+      externalAuthenticationMethods.add(ExternalAuthenticationMethod(
+        name: 'twitter',
+        displayName: 'Twitter',
+        loginUrl: 'https://twitter.com/login',
+        signupUrl: 'https://twitter.com/signup',
+        displayIcon: null,
+      ));
+    }
 
     final loginForm = Column(mainAxisAlignment: MainAxisAlignment.center, children: [
       _UsernamePasswordForm(loginPageState: this),
@@ -424,10 +438,24 @@ class _LoginPageState extends State<LoginPage> {
         const OrDivider(),
         ...externalAuthenticationMethods.map((method) {
           final icon = method.displayIcon;
+          final Widget iconWidget;
+          if (method.name == 'twitter') {
+            iconWidget = SvgPicture.asset(
+              'assets/icons/twitter.svg',
+              width: 24,
+              height: 24,
+              colorFilter: ColorFilter.mode(
+                Theme.of(context).colorScheme.onSurface,
+                BlendMode.srcIn,
+              ),
+            );
+          } else if (icon != null) {
+            iconWidget = Image.network(icon, width: 24, height: 24);
+          } else {
+            iconWidget = const SizedBox(width: 24, height: 24);
+          }
           return OutlinedButton.icon(
-            icon: icon != null
-              ? Image.network(icon, width: 24, height: 24)
-              : null,
+            icon: iconWidget,
             onPressed: !_inProgress
               ? () => _beginWebAuth(method)
               : null,

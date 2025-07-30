@@ -32,6 +32,7 @@ GetServerSettingsResult _$GetServerSettingsResultFromJson(
       realmDescription: json['realm_description'] as String,
       realmWebPublicAccessEnabled:
           json['realm_web_public_access_enabled'] as bool?,
+      enableTwitterLogin: json['enable_twitter_login'] as bool? ?? false,
     );
 
 Map<String, dynamic> _$GetServerSettingsResultToJson(
@@ -51,6 +52,7 @@ Map<String, dynamic> _$GetServerSettingsResultToJson(
       'realm_icon': instance.realmIcon,
       'realm_description': instance.realmDescription,
       'realm_web_public_access_enabled': instance.realmWebPublicAccessEnabled,
+      'enable_twitter_login': instance.enableTwitterLogin,
     };
 
 ExternalAuthenticationMethod _$ExternalAuthenticationMethodFromJson(

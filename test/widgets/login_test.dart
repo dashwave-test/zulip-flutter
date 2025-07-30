@@ -237,5 +237,19 @@ void main() {
       // TODO failures, such as: invalid loginUrl; URL can't be launched;
       //   WebAuthPayload.realm doesn't match the realm the UI is about
     });
+
+    group('twitter auth', () {
+      testWidgets('twitter button appears when enabled', (tester) async {
+        final serverSettings = eg.serverSettings(enableTwitterLogin: true);
+        await prepare(tester, serverSettings);
+        check(find.byIcon(ZulipIcons.twitter)).findsOneWidget;
+      });
+
+      testWidgets('twitter button absent when not enabled', (tester) async {
+        final serverSettings = eg.serverSettings(enableTwitterLogin: false);
+        await prepare(tester, serverSettings);
+        check(find.byIcon(ZulipIcons.twitter)).findsNothing;
+      });
+    });
   });
 }
