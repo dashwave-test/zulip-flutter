@@ -433,6 +433,21 @@ class MarkAsReadWidget extends StatelessWidget {
 
   final Narrow narrow;
 
+  /// Checks if the channel is subscribed
+  bool _isChannelSubscribed(BuildContext context) {
+    final store = PerAccountStoreWidget.of(context);
+    
+    switch (narrow) {
+      case StreamNarrow(:final streamId):
+      case TopicNarrow(:final streamId):
+        // If the subscription exists, the channel is subscribed
+        return store.subscriptions.containsKey(streamId);
+      default:
+        // For other narrow types (All messages, DMs), always return true
+        return true;
+    }
+  }
+
   void _handlePress(BuildContext context) async {
     if (!context.mounted) return;
 
@@ -461,13 +476,17 @@ class MarkAsReadWidget extends StatelessWidget {
     final zulipLocalizations = ZulipLocalizations.of(context);
     final store = PerAccountStoreWidget.of(context);
     final unreadCount = store.unreads.countInNarrow(narrow);
-    final areMessagesRead = unreadCount == 0;
+    final areMessagesRead = unreadCount == 0; 
+    final isSubscribed = _isChannelSubscribed(context);
+    
+    // Don't show the button for unsubscribed channels or when there are no unread messages
+    final shouldShowButton = isSubscribed && !areMessagesRead;
 
     return IgnorePointer(
-      ignoring: areMessagesRead,
+      ignoring: !shouldShowButton,
       child: AnimatedOpacity(
-        opacity: areMessagesRead ? 0 : 1,
-        duration: Duration(milliseconds: areMessagesRead ? 2000 : 300),
+        opacity: shouldShowButton ? 1 : 0,
+        duration: Duration(milliseconds: shouldShowButton ? 300 : 2000),
         curve: Curves.easeOut,
         child: SizedBox(width: double.infinity,
           // Design referenced from:
