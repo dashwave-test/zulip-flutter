@@ -47,6 +47,10 @@
   "@actionSheetOptionCopy":  {
     "description": "Label for copy message text button on action sheet."
   },
+  "actionSheetOptionUnsubscribe": "Unsubscribe",
+  "@actionSheetOptionUnsubscribe": {
+    "description": "Button text for unsubscribing from a stream."
+  },
   "actionSheetOptionShare": "Share",
   "@actionSheetOptionShare":  {
     "description": "Label for share button on action sheet."
@@ -143,6 +147,10 @@
   },
   "errorQuotationFailed": "Quotation failed",
   "@errorQuotationFailed": {
+  "errorUnsubscribeFailedTitle": "Error unsubscribing",
+  "@errorUnsubscribeFailedTitle": {
+    "description": "Error title when unsubscribing from a stream failed."
+  },
     "description": "Error message when quoting a message failed."
   },
   "errorServerMessage": "The server said:\n\n{message}",
