@@ -957,12 +957,35 @@ class ComposeBox extends StatelessWidget {
   final GlobalKey<ComposeBoxController>? controllerKey;
   final Narrow narrow;
 
+  /// Check if the user can post to the stream.
+  ///
+  /// For private streams, the user must be subscribed to post.
+  bool _canPostToStream(BuildContext context, int streamId) {
+    final store = PerAccountStoreWidget.of(context);
+    final stream = store.streams[streamId];
+    
+    // If the stream is invite-only (private) and the user is not subscribed, they can't post
+    if (stream?.inviteOnly == true && store.subscriptions[streamId] == null) {
+      return false;
+    }
+    
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) {
     final narrow = this.narrow;
     if (narrow is StreamNarrow) {
+      // Hide compose box for private streams the user is not subscribed to
+      if (!_canPostToStream(context, narrow.streamId)) {
+        return const SizedBox.shrink();
+      }
       return _StreamComposeBox(key: controllerKey, narrow: narrow);
     } else if (narrow is TopicNarrow) {
+      // Hide compose box for private streams the user is not subscribed to
+      if (!_canPostToStream(context, narrow.streamId)) {
+        return const SizedBox.shrink();
+      }
       return _FixedDestinationComposeBox(key: controllerKey, narrow: narrow);
     } else if (narrow is DmNarrow) {
       return _FixedDestinationComposeBox(key: controllerKey, narrow: narrow);
