@@ -959,10 +959,29 @@ class ComposeBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final store = PerAccountStoreWidget.of(context);
     final narrow = this.narrow;
     if (narrow is StreamNarrow) {
+      final stream = store.streams[narrow.streamId];
+      if (stream == null) {
+        // We don't have data for this stream, so can't show a compose box.
+        // On stream narrows, we should always have the stream data.
+        return const SizedBox.shrink();
+      }
+      if (stream.inviteOnly && store.subscriptions[stream.streamId] == null) {
+        return const SizedBox.shrink();
+      }
       return _StreamComposeBox(key: controllerKey, narrow: narrow);
     } else if (narrow is TopicNarrow) {
+      final stream = store.streams[narrow.streamId];
+      if (stream == null) {
+        // We don't have data for this stream, so can't show a compose box.
+        // On topic narrows, we should always have the stream data.
+        return const SizedBox.shrink();
+      }
+      if (stream.inviteOnly && store.subscriptions[stream.streamId] == null) {
+        return const SizedBox.shrink();
+      }
       return _FixedDestinationComposeBox(key: controllerKey, narrow: narrow);
     } else if (narrow is DmNarrow) {
       return _FixedDestinationComposeBox(key: controllerKey, narrow: narrow);

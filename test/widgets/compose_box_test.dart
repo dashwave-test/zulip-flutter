@@ -164,4 +164,42 @@ void main() {
       checkComposeBoxTextFields(tester, expectTopicTextField: false);
     });
   });
+
+  group('ComposeBox visibility', () {
+    Future<void> prepare(WidgetTester tester, {
+      required Narrow narrow,
+      required bool isSubscribed,
+    }) async {
+      addTearDown(testBinding.reset);
+      final stream = eg.stream(streamId: 123, isPrivate: true);
+      final subscription = eg.subscription(stream);
+      await testBinding.globalStore.add(eg.selfAccount,
+        eg.initialSnapshot(
+          streams: [stream],
+          subscriptions: isSubscribed ? [subscription] : [],
+        ));
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: ZulipLocalizations.localizationsDelegates,
+          supportedLocales: ZulipLocalizations.supportedLocales,
+          home: GlobalStoreWidget(
+            child: PerAccountStoreWidget(
+              accountId: eg.selfAccount.id,
+              child: ComposeBox(narrow: narrow)))));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('private stream, subscribed', (tester) async {
+      await prepare(tester, narrow: StreamNarrow(123), isSubscribed: true);
+      check(find.byType(TextField)).findsOneWidget();
+    });
+
+    testWidgets('private stream, not subscribed', (tester) async {
+      await prepare(tester, narrow: StreamNarrow(123), isSubscribed: false);
+      check(find.byType(TextField)).findsNothing();
+      check(find.byType(SizedBox)).findsOneWidget();
+      final size = tester.getSize(find.byType(SizedBox));
+      check(size).equals(Size.zero);
+    });
+  });
 }
