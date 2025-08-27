@@ -34,6 +34,7 @@ import 'dialog_checks.dart';
 Future<void> setupToMessageActionSheet(WidgetTester tester, {
   required Message message,
   required Narrow narrow,
+  bool subscribed = true,
 }) async {
   addTearDown(testBinding.reset);
 
@@ -42,7 +43,10 @@ Future<void> setupToMessageActionSheet(WidgetTester tester, {
   store.addUser(eg.user(userId: message.senderId));
   if (message is StreamMessage) {
     final stream = eg.stream(streamId: message.streamId);
-    store..addStream(stream)..addSubscription(eg.subscription(stream));
+    store.addStream(stream);
+    if (subscribed) {
+      store.addSubscription(eg.subscription(stream));
+    }
   }
   final connection = store.connection as FakeApiConnection;
 
@@ -485,6 +489,104 @@ void main() {
         expectedMessage: 'That message does not seem to exist.',
       )));
       check(await Clipboard.getData('text/plain')).isNull();
+    });
+  });
+
+  group('UnsubscribeButton', () {
+    Future<void> tapButton(WidgetTester tester) async {
+      await tester.ensureVisible(find.byIcon(ZulipIcons.cancel, skipOffstage: false));
+      await tester.tap(find.byIcon(ZulipIcons.cancel));
+      await tester.pump(); // [MenuItemButton.onPressed] called in a post-frame callback
+    }
+
+    testWidgets('success', (WidgetTester tester) async {
+      final message = eg.streamMessage();
+      await setupToMessageActionSheet(tester, message: message, narrow: TopicNarrow.ofMessage(message));
+      final store = await testBinding.globalStore.perAccount(eg.selfAccount.id);
+
+      final connection = store.connection as FakeApiConnection;
+      connection.prepare(json: {
+        'result': 'success',
+        'msg': '',
+        'subscribed': {},
+        'already_subscribed': {},
+        'unauthorized': [],
+      });
+      await tapButton(tester);
+      await tester.pump(Duration.zero);
+
+      check(connection.lastRequest).isA<http.Request>()
+        ..method.equals('POST')
+        ..url.path.equals('/api/v1/users/me/subscriptions')
+        ..bodyFields.deepEquals({
+          'subscriptions': jsonEncode([message.displayRecipient]),
+        });
+    });
+
+    testWidgets('request has an error', (WidgetTester tester) async {
+      final message = eg.streamMessage();
+      await setupToMessageActionSheet(tester, message: message, narrow: TopicNarrow.ofMessage(message));
+      final store = await testBinding.globalStore.perAccount(eg.selfAccount.id);
+      final zulipLocalizations = GlobalLocalizations.zulipLocalizations;
+
+      final connection = store.connection as FakeApiConnection;
+
+      connection.prepare(httpStatus: 400, json: {
+        'code': 'BAD_REQUEST',
+        'msg': 'Invalid stream name',
+        'result': 'error',
+      });
+      await tapButton(tester);
+      await tester.pump(Duration.zero);
+
+      await tester.tap(find.byWidget(checkErrorDialog(tester,
+        expectedTitle: zulipLocalizations.errorUnsubscribeFailedTitle,
+        expectedMessage: 'Invalid stream name')));
+    });
+  });
+
+  group('conditional visibility', () {
+    testWidgets('subscribed stream shows all buttons', (WidgetTester tester) async {
+      final message = eg.streamMessage();
+      await setupToMessageActionSheet(tester, message: message, narrow: TopicNarrow.ofMessage(message));
+
+      // All buttons that should be visible for a subscribed stream are present.
+      expect(find.byIcon(Icons.add_reaction_outlined), findsOneWidget);
+      expect(find.descendant(of: find.byType(BottomSheet), matching: find.byIcon(ZulipIcons.star_filled)), findsOneWidget);
+      expect(find.byIcon(Icons.adaptive.share), findsOneWidget);
+      expect(find.byIcon(Icons.format_quote_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.copy), findsOneWidget);
+      expect(find.byIcon(ZulipIcons.cancel), findsOneWidget);
+    });
+
+    testWidgets('unsubscribed stream hides modification buttons', (WidgetTester tester) async {
+      final message = eg.streamMessage();
+      await setupToMessageActionSheet(tester, message: message, narrow: TopicNarrow.ofMessage(message), subscribed: false);
+
+      // Modification buttons are hidden.
+      expect(find.byIcon(Icons.add_reaction_outlined), findsNothing);
+      expect(find.descendant(of: find.byType(BottomSheet), matching: find.byIcon(ZulipIcons.star_filled)), findsNothing);
+      expect(find.byIcon(ZulipIcons.cancel), findsNothing);
+
+      // Other buttons are still visible.
+      expect(find.byIcon(Icons.adaptive.share), findsOneWidget);
+      expect(find.byIcon(Icons.format_quote_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.copy), findsOneWidget);
+    });
+
+    testWidgets('DM conversation shows all buttons', (WidgetTester tester) async {
+      final message = eg.dmMessage(from: eg.selfUser, to: [eg.otherUser]);
+      await setupToMessageActionSheet(tester, message: message, narrow: DmNarrow.ofMessage(message, selfUserId: eg.selfUser.userId));
+
+      // All buttons that should be visible for a DM are present.
+      expect(find.byIcon(Icons.add_reaction_outlined), findsOneWidget);
+      expect(find.descendant(of: find.byType(BottomSheet), matching: find.byIcon(ZulipIcons.star_filled)), findsOneWidget);
+      expect(find.byIcon(Icons.adaptive.share), findsOneWidget);
+      expect(find.byIcon(Icons.format_quote_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.copy), findsOneWidget);
+
+      // Unsubscribe button is not present for DMs.
+      expect(find.byIcon(ZulipIcons.cancel), findsNothing);
     });
   });
 }

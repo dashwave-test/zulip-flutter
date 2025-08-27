@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 import '../api/exception.dart';
 import '../api/model/model.dart';
 import '../api/route/messages.dart';
+import '../api/route/subscriptions.dart';
 import 'clipboard.dart';
 import 'compose_box.dart';
 import 'dialog.dart';
@@ -19,6 +20,11 @@ import 'store.dart';
 /// Must have a [MessageListPage] ancestor.
 void showMessageActionSheet({required BuildContext context, required Message message}) {
   final store = PerAccountStoreWidget.of(context);
+
+  final isSubscribed = switch (message) {
+    StreamMessage() => store.subscriptions.containsKey(message.streamId),
+    DmMessage() => true,
+  };
 
   // The UI that's conditioned on this won't live-update during this appearance
   // of the action sheet (we avoid calling composeBoxControllerOf in a build
@@ -37,14 +43,20 @@ void showMessageActionSheet({required BuildContext context, required Message mes
     context: context,
     builder: (BuildContext _) {
       return Column(children: [
-        if (!hasThumbsUpReactionVote) AddThumbsUpButton(message: message, messageListContext: context),
-        StarButton(message: message, messageListContext: context),
+        if (isSubscribed) ...[
+          if (!hasThumbsUpReactionVote)
+            AddThumbsUpButton(message: message, messageListContext: context),
+          StarButton(message: message, messageListContext: context),
+        ],
         ShareButton(message: message, messageListContext: context),
-        if (isComposeBoxOffered) QuoteAndReplyButton(
-          message: message,
-          messageListContext: context,
-        ),
+        if (isComposeBoxOffered)
+          QuoteAndReplyButton(
+            message: message,
+            messageListContext: context,
+          ),
         CopyButton(message: message, messageListContext: context),
+        if (message is StreamMessage && isSubscribed)
+          UnsubscribeButton(message: message, messageListContext: context),
       ]);
     });
 }
@@ -364,5 +376,46 @@ class CopyButton extends MessageActionSheetMenuItemButton {
     copyWithPopup(context: context,
       successContent: Text(zulipLocalizations.successMessageCopied),
       data: ClipboardData(text: rawContent));
+  };
+}
+
+class UnsubscribeButton extends MessageActionSheetMenuItemButton {
+  UnsubscribeButton({
+    super.key,
+    required super.message,
+    required super.messageListContext,
+  }) : assert(message is StreamMessage);
+
+  @override get icon => ZulipIcons.cancel;
+
+  @override
+  String label(ZulipLocalizations zulipLocalizations) {
+    return zulipLocalizations.actionSheetOptionUnsubscribe;
+  }
+
+  @override get onPressed => (BuildContext context) async {
+    Navigator.of(context).pop();
+    final zulipLocalizations = ZulipLocalizations.of(messageListContext);
+    final store = PerAccountStoreWidget.of(messageListContext);
+    final connection = store.connection;
+    // The display_recipient for a stream message is the stream name.
+    final streamName = (message as StreamMessage).displayRecipient;
+
+    try {
+      await unsubscribe(connection, subscriptions: [streamName]);
+    } catch (e) {
+      if (!messageListContext.mounted) return;
+
+      String? errorMessage;
+      switch (e) {
+        case ZulipApiException():
+          errorMessage = e.message;
+        default:
+      }
+
+      await showErrorDialog(context: messageListContext,
+        title: zulipLocalizations.errorUnsubscribeFailedTitle,
+        message: errorMessage);
+    }
   };
 }
